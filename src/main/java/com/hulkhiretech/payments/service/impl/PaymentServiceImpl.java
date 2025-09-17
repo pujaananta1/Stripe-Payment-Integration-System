@@ -1,17 +1,22 @@
 package com.hulkhiretech.payments.service.impl;
 
-import java.util.UUID;
-
-import org.modelmapper.ModelMapper;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.hulkhiretech.payments.constant.TransactionStatusEnum;
-import com.hulkhiretech.payments.dto.TransactionDTO;
-import com.hulkhiretech.payments.pojo.CreateTxnRequest;
-import com.hulkhiretech.payments.pojo.CreateTxnResponse;
-import com.hulkhiretech.payments.pojo.InitiateTxnRequest;
+import com.hulkhiretech.payments.constant.ErrorCodeEnum;
+import com.hulkhiretech.payments.exception.StripeProviderException;
+import com.hulkhiretech.payments.http.HttpRequest;
+import com.hulkhiretech.payments.http.HttpServiceEngine;
+import com.hulkhiretech.payments.pojo.CreatePaymentRequest;
+import com.hulkhiretech.payments.pojo.PaymentResponse;
+import com.hulkhiretech.payments.service.helper.CreatePaymentHelper;
+import com.hulkhiretech.payments.service.helper.ExpirePaymentHelper;
+import com.hulkhiretech.payments.service.helper.GetPaymentHelper;
 import com.hulkhiretech.payments.service.interfaces.PaymentService;
-import com.hulkhiretech.payments.service.interfaces.PaymentStatusService;
+import com.hulkhiretech.payments.stripe.StripeResponse;
+import com.hulkhiretech.payments.util.StripeResponseUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,59 +25,86 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
+
+	private final HttpServiceEngine httpServiceEngine;
+
+	private final CreatePaymentHelper createPaymentHelper;
+
+	private final GetPaymentHelper getPaymentHelper;
 	
-	private final PaymentStatusService paymentStatusService;
-	
-	private final ModelMapper modelMapper;
+	private final ExpirePaymentHelper expirePaymentHelper;
+
+	private final ChatClient chatClient;
 
 	@Override
-	public CreateTxnResponse createTxn(CreateTxnRequest createTxnRequest) {
-		log.info("Creating payment transaction createTxnRequest:{}",
-                createTxnRequest);
-		
-		TransactionDTO txnDto = modelMapper.map(
-				createTxnRequest, TransactionDTO.class);
-		log.info("Mapped txnDto: {}", txnDto);
-		
-		String txnStatus = TransactionStatusEnum.CREATED.name();
-		String txnReference = generateUniqueTxnRef();
-		
-		txnDto.setTxnStatus(txnStatus);
-		txnDto.setTxnReference(txnReference);
-		
-		log.info("Final txnDto to be saved: {}", txnDto);
-		
-		TransactionDTO response = paymentStatusService.processStatus(txnDto);
-		log.info("Response from PaymentStatusService: {}", response);
-		
-		CreateTxnResponse createTxnResponse = new CreateTxnResponse();
-		createTxnResponse.setTxnReference(response.getTxnReference());
-		createTxnResponse.setTxnStatus(response.getTxnStatus());
-		
-		log.info("CreateTxnResponse to be returned: {}", createTxnResponse);
-		
-		return createTxnResponse;
-	}
+	public PaymentResponse createPayment(CreatePaymentRequest createPaymentRequest) {
+		log.info("Processing payment creation|| "
+				+ "createPaymentRequest: {}", createPaymentRequest);
 
-	private String generateUniqueTxnRef() {
-		return UUID.randomUUID().toString();
+		// if createPaymementRequest 1st line item quantity is 0 or less then throw exception
+		if (createPaymentRequest.getLineItems().get(0).getQuantity() <= 0) {
+			throw new StripeProviderException(
+					ErrorCodeEnum.INVALID_QUANTITY.getErrorCode(),
+					ErrorCodeEnum.INVALID_QUANTITY.getErrorMessage(),
+					HttpStatus.BAD_REQUEST
+					);
+		}
+
+		HttpRequest httpRequest = createPaymentHelper.prepareHttpRequest(
+				createPaymentRequest);
+		log.info("Prepared HttpRequest: {}", httpRequest);
+
+		ResponseEntity<String> httpResponse = httpServiceEngine.makeHttpCall(httpRequest);
+		log.info("HTTP Service response: {}", httpResponse);
+
+		StripeResponse stripeResponse = createPaymentHelper.processResponse(httpResponse);
+		log.info("Final PaymentResponse to be returned: {}", stripeResponse);
+
+		PaymentResponse paymentRes = StripeResponseUtil.preparePaymentResponse(
+				stripeResponse);
+		log.info("PaymentResponse constructed: {}", paymentRes);
+
+		return paymentRes;
 	}
 
 	@Override
-	public String initiateTxn(String id, InitiateTxnRequest initiateTxnRequest) {
-		log.info("Initiating payment transaction||id:{}|initiateTxnRequest:{}", 
-				id, initiateTxnRequest);
-		
-		//TODO
-		// update DB as INITIATED
+	public PaymentResponse getPayment(String id) {
+		log.info("Get Payment called| id: {}", id);
 
-		// Make Rest Http API call to stripe-provider-service for create-payment api
+		HttpRequest httpRequest = getPaymentHelper.prepareHttpRequest(id);
+		log.info("Prepared HttpRequest: {}", httpRequest);
 
-		// Update DB as PENDING, providerReference
-		
-		// return the url back to the invoker.
-		
-		return "return initiateTxn from service=>" + id;
+		ResponseEntity<String> httpResponse = httpServiceEngine.makeHttpCall(httpRequest);
+		log.info("HTTP Service response: {}", httpResponse);
+
+		StripeResponse stripeResponse = getPaymentHelper.processResponse(httpResponse);
+		log.info("Final PaymentResponse to be returned: {}", stripeResponse);
+
+		PaymentResponse paymentRes = StripeResponseUtil.preparePaymentResponse(
+				stripeResponse);
+		log.info("PaymentResponse constructed: {}", paymentRes);
+
+		return paymentRes;
+	}
+
+	@Override
+	public PaymentResponse expirePayment(String id) {
+		log.info("Expire Payment called| id: {}", id);
+
+		HttpRequest httpRequest = expirePaymentHelper.prepareHttpRequest(id);
+		log.info("Prepared HttpRequest: {}", httpRequest);
+
+		ResponseEntity<String> httpResponse = httpServiceEngine.makeHttpCall(httpRequest);
+		log.info("HTTP Service response: {}", httpResponse);
+
+		StripeResponse stripeResponse = expirePaymentHelper.processResponse(httpResponse);
+		log.info("Final PaymentResponse to be returned: {}", stripeResponse);
+
+		PaymentResponse paymentRes = StripeResponseUtil.preparePaymentResponse(
+				stripeResponse);
+		log.info("PaymentResponse constructed: {}", paymentRes);
+
+		return paymentRes;
 	}
 
 }
