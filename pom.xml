@@ -4,24 +4,24 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.hulkhiretech.payments</groupId>
-	<artifactId>stripe-provider-service</artifactId>
+	<artifactId>payment-processing-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>stripe-provider-service</name>
+	<name>payment-processing-service</name>
 	<description></description>
 
-	  <properties>
+	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<java.version>21</java.version>
-		<maven.compiler.source>21</maven.compiler.source>
-		<maven.compiler.target>21</maven.compiler.target>
-		<spring.application.name>stripe-provider-service</spring.application.name>
+		<java.version>17</java.version>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+		<spring.application.name>payment-processing-service</spring.application.name>
 		<junit.jupiter.version>5.8.1</junit.jupiter.version>
 		<junit.platform.version>1.8.1</junit.platform.version>
 		<spring-cloud.version>2021.0.3</spring-cloud.version>
-	  </properties>
+	</properties>
 
-	  <profiles>
+	<profiles>
 		<profile>
 			<id>local</id>
 			<activation>
@@ -30,21 +30,21 @@
 			<properties>
 				<spring.profiles.active>local</spring.profiles.active>
 				<logging.path>
-					D:\\ctws\\aug25ct\\logs\\stripe-provider-service</logging.path>
+					D:\\ctws\\aug25ct\\logs\\payment-processing-service</logging.path>
 			</properties>
 		</profile>
 		<profile>
 			<id>dev</id>
 			<properties>
 				<spring.profiles.active>dev</spring.profiles.active>
-				<logging.path>/var/lib/tomcat/logs/cpt/stripe-provider-service</logging.path>
+				<logging.path>/var/lib/tomcat/logs/cpt/payment-processing-service</logging.path>
 			</properties>
 		</profile>
 		<profile>
 			<id>prod</id>
 			<properties>
 				<spring.profiles.active>prod</spring.profiles.active>
-				<logging.path>/var/lib/tomcat/logs/cpt/stripe-provider-service</logging.path>
+				<logging.path>/var/lib/tomcat/logs/cpt/payment-processing-service</logging.path>
 			</properties>
 		</profile>
 	</profiles>
@@ -94,11 +94,23 @@
 		    <artifactId>modelmapper</artifactId>
 		    <version>3.2.1</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+			<!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
+		</dependency>
+
 
 	</dependencies>
 
 	<build>
-		<finalName>stripe-provider-service</finalName>
+		<finalName>payment-processing-service</finalName>
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>

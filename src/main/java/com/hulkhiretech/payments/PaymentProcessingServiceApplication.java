@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class StripeProviderServiceApplication {
+public class PaymentProcessingServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(StripeProviderServiceApplication.class, args);
+		SpringApplication.run(PaymentProcessingServiceApplication.class, args);
 	}
 
 }
